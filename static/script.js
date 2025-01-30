@@ -15,6 +15,12 @@ let progress = 1.2
 let momentum = 0
 let score = 0
 let failed = false
+let blink = false
+let counter = 0
+let highscores = []
+
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
 
 let keysdown = []
 
@@ -26,6 +32,7 @@ function tick(){
 
 function start(){
     map = []
+    blink = false
     platforms = [5,5,5,5,5,5,5,5]
     for (let index = 0; index < 1000; index++) {
         platforms.push(Math.floor(Math.random()*4 +1))
@@ -132,10 +139,16 @@ function update(){
         momentum = 0
         y = 0
     }
+    score = Math.floor((progress-1.2)*153)
     if(y < -100 && !failed){
         failed = true
+        if(highscores.length > 0)
+            if(score > highscores[0][0]){
+                console.log("Made leaderboard")
+                sendScore("MAT", score)
+                setTimeout(getScores, 1000)
+            }
     }
-    score = Math.floor((progress-1.2)*153)
 }
 
 function draw(){
@@ -161,13 +174,28 @@ function draw(){
         drawPoly(["#444", [-8,94-y*7], [-8,98-y*7], [-3,98-y*7], [-3,94-y*7]])
     }
     if(failed){
-        drawPoly(["white", [92,-32], [92,28], [-92,28], [-92,-32]])
-        drawPoly(["black", [90,-30], [90,26], [-90,26], [-90,-30]])
+        drawPoly(["white", [92,-52], [92,48], [-92,48], [-92,-52]])
+        drawPoly(["black", [90,-50], [90,46], [-90,46], [-90,-50]])
         ctx.fillStyle = "purple"
         ctx.font = "12px Courier New"
-        ctx.fillText("Better luck next time", 120, 107)
-        ctx.fillText("Score: " + score.toString().padStart(6, "0"), 120, 122)
-        ctx.fillText("Press Space to restart", 120, 137)
+        ctx.fillText("Better luck next time", 120, 86)
+        ctx.fillText("Score: " + score.toString().padStart(6, "0"), 120, 96)
+        ctx.font = "8px Courier New"
+        for(const s in highscores){
+            if(highscores[s][0] == score){
+                counter++
+                if (counter == 20){
+                    counter = 0
+                    blink = !blink
+                }
+                if(blink)
+                    ctx.fillText(highscores[s][1] + ": " + highscores[s][0].toString().padStart(6, "0"), 230, 160 - 7*s)
+            } else
+                ctx.fillText(highscores[s][1] + ": " + highscores[s][0].toString().padStart(6, "0"), 230, 160 - 7*s)
+        }
+        ctx.font = "12px Courier New"
+        ctx.fillText("Press Space", 120, 147)
+        ctx.fillText("to restart ", 120, 157)
     }
 }
 
@@ -181,6 +209,25 @@ function keyup(event){
     keysdown.splice(index,1)
 }
 
+//https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+async function getScores() {
+    highscores.length = 0
+    const url = "scores";
+    const response = await fetch(url);
+    const json = await response.json()
+    for(let i in json)
+        highscores.push([i, json [i]]);
+}
+
+//https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+async function sendScore(name, score) {
+    await fetch("scores", {
+        method: "POST",
+        body: JSON.stringify({ name: name, score:score }),
+        headers: myHeaders,
+      });
+}
+
 function setup(){
     window.addEventListener("keydown", keydown)
     window.addEventListener("keyup", keyup)
@@ -191,6 +238,7 @@ function setup(){
     ctx.canvas.width = SCALING_FACTOR * canvas.width
     ctx.canvas.height = SCALING_FACTOR * canvas.height
     ctx.scale(SCALING_FACTOR, SCALING_FACTOR)
+    getScores()
 }
 
 setup()
