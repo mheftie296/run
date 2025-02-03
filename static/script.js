@@ -5,11 +5,11 @@ let fps = 30
 let x = 0
 let y = 0
 let realx = 0
-let fov = 90
 let platforms
 let map
 let started = false
 let speed = 0.0
+let maxSpeed = 0.1
 let grounded = true
 let progress = 1.2
 let momentum = 0
@@ -18,6 +18,10 @@ let failed = false
 let blink = false
 let counter = 0
 let highscores = []
+let pName = ''
+let named = false
+let typd = ''
+let polydraw = 500
 
 const myHeaders = new Headers();
 myHeaders.append("Content-Type", "application/json");
@@ -30,6 +34,11 @@ function tick(){
     draw()
 }
 
+function getName(){
+    drawPoly(["white", [92,-52], [92,48], [-92,48], [-92,-52]])
+    drawPoly(["black", [90,-50], [90,46], [-90,46], [-90,-50]])
+}
+
 function start(){
     map = []
     blink = false
@@ -39,6 +48,7 @@ function start(){
     }
     failed = false
     x = 0
+    realx = 0
     speed = 0.0
     progress = 1.2
     started = false
@@ -83,7 +93,7 @@ function draw3d(poly){
 }
 
 function update(){
-    if(started && speed < 0.1){
+    if(started && speed < maxSpeed){
         speed += 0.005
     }
     for (const element of map) {
@@ -107,7 +117,7 @@ function update(){
         x -= speed
     }
     if(keysdown.includes("Space")){
-        if(!started){
+        if(!started && named){
             started = true
         } else if(y == 0 && grounded) {
             momentum = 1
@@ -145,9 +155,29 @@ function update(){
         if(highscores.length > 0)
             if(score > highscores[0][0]){
                 console.log("Made leaderboard")
-                sendScore("MAT", score)
+                sendScore(pName, score)
                 setTimeout(getScores, 1000)
             }
+    }
+    if(!named){
+        if(keysdown.length != 0){
+            if(keysdown[keysdown.length-1].includes("Key") && !typd.includes(keysdown[keysdown.length-1][3]) && pName.length < 3){
+                pName += keysdown[keysdown.length-1][3]
+                typd = keysdown[keysdown.length-1][3]
+            }
+            if(keysdown[0].includes("Backspace") && typd != "BACKSPACE"){
+                pName = pName.slice(0,pName.length-1)
+                typd = "BACKSPACE"
+            }
+            if(keysdown[0].includes("Enter") && pName.length == 3){
+                named = true
+                polydraw = 0
+            }
+                
+        }
+        else{
+            typd = ''
+        }
     }
 }
 
@@ -157,7 +187,7 @@ function draw(){
     ctx.font = "12px Courier New"
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/padStart
     ctx.fillText(" Score: " + score.toString().padStart(6, "0"), 0, 15)
-    for (const poly of map.slice(3500-Math.floor(progress*4), 4050-Math.floor(progress*4))) {
+    for (const poly of map.slice(3500-Math.floor(progress*4) + polydraw, 4050-Math.floor(progress*4))) {
         draw3d(poly)
     }
     if(grounded){
@@ -196,6 +226,20 @@ function draw(){
         ctx.font = "12px Courier New"
         ctx.fillText("Press Space", 120, 147)
         ctx.fillText("to restart ", 120, 157)
+    }
+    if(!named){
+        drawPoly(["white", [92,-52], [92,48], [-92,48], [-92,-52]])
+        drawPoly(["black", [90,-50], [90,46], [-90,46], [-90,-50]])
+        ctx.fillStyle = "purple"
+        ctx.font = "12px Courier New"
+        ctx.fillText("Set a Name!", 160, 100)
+        ctx.font = "18px Courier New"
+        ctx.fillText(pName, 183, 120)
+        ctx.fillText("___", 183, 120)
+        if(pName.length == 3){
+            ctx.font = "12px Courier New"
+            ctx.fillText("Press enter", 160, 140)
+        }
     }
 }
 
