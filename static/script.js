@@ -85,8 +85,8 @@ function draw3d(poly){
     let dpoly = []
     dpoly.push(poly[0])
     for (const point of poly) {
-        let aX = Math.tan(Math.atan((point[0]-realx)/(point[1]))) * 400
-        let aY = Math.tan(Math.atan((point[2])/(point[1]))) * 400
+        let aX = ((point[0]-realx)/(point[1])) * 400
+        let aY = ((point[2])/(point[1])) * 400
         dpoly.push([-aX,-aY])
     }
     drawPoly(dpoly)
